@@ -32,18 +32,27 @@ An overview of the UDP marker mechanism is illustrated below:
 1. The OpenBCI Board receives the marker and inserts it into the EEG data stream.  The marker is saved with the EEG data to the SD card (if that option was selected) 
 1. Finally, the data packet is transmitted back to the OpenBCI_GUI where it is displayed and optionally saved.  
 
-*Note: Currently the simulus presentation software and the OpenBCI_GUI software must run on the same computer.  The reason for this is that the UDP listener on in the OpenBCI GUI will only respond to messages sent from localhost (127.0.0.1).  This limitation can be removed by editing the UDP setup in OpenBCI_GUI.pde
+*Note: Currently the simulus presentation software and the OpenBCI_GUI software must run on the same computer.  The reason for this is that the UDP listener on in the OpenBCI GUI will only respond to messages sent from localhost (127.0.0.1).  This limitation can be removed by editing the UDP setup in OpenBCI_GUI.pde*
+
+# Requirements
+At least the following versions of software is required:
+- OpenBCI_GUI V3.2.0 (available [here](https://github.com/OpenBCI/OpenBCI_GUI/releases))
+- OpenBCI_Hub V1.3.9 (available [here](https://github.com/OpenBCI/OpenBCI_Hub/releases))
+- OpenBCI firmware V3.0.0 (available [here](https://github.com/OpenBCI/OpenBCI_32bit_Library/releases))
+
+Stimulus presentation software that is able to send UDP messages.  The software must run on the same computer as the OpenBCI_GUI software.
 
 # Configuring the Stimulus Presentation Software
-Most stimulus presentation software allows for markers to be sent over UDP.  Configure the software to send markers to Port 51000 on localhost. The format for marker messages is:  
+Most stimulus presentation software allows for markers to be sent over UDP.  Configure the software to send markers to Port 51000 on localhost or 127.0.0.1. The format for marker messages is:  
 
-MARKnn
+```MARKnn```
 
 where "*MARK*" is uppercase identifier and *nn* is an integer between 1 and 95 (inclusive)
 
 # The OpenBCI_GUI Marker Widget
 The Marker Widget is used to configure the different parts of the system and to monitor the markers during a study.  To use this widget perform the following steps before starting the data stream:
 1.  Open the widget and click on the "Marker Mode" button.  This sends a command to the board to put the board into Marker Mode.  In Marker Mode the accelerometer data is not recorded or transmitted back and the value of the marker will be saved in the AUX1 channel.
+1. Start the data stream
 1.  As each marker is received, the widget will plot the value of the maker on the timeline and the value of the last marker will be indicated above the chart.
 
 
