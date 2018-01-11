@@ -392,11 +392,11 @@ void setup() {
 String udpReceiveString = null;
 
 void udpReceiveHandler(byte[] data, String ip, int portRX){
-  
+
   String udpString = new String(data);
   println(udpString+" from: "+ip+" and port: "+portRX);
   if (udpString.length() >=5  && udpString.indexOf("MARK") >= 0){
-    
+
     /*  Old version with 10 markers
     char c = value.charAt(4);
   if ( c>= '0' && c <= '9'){
@@ -404,11 +404,11 @@ void udpReceiveHandler(byte[] data, String ip, int portRX){
       hub.sendCommand("`"+char(c-(int)'0'));
       */
     int intValue = Integer.parseInt(udpString.substring(4));
-      
+
     if (intValue > 0 && intValue < 96){ // Since we only send single char ascii value markers (from space to char(126)
-      
+
       String sendString = "`"+char(intValue+31);
-      
+
       println("Marker value: "+udpString+" with numeric value of char("+intValue+") as : "+sendString);
       hub.sendCommand(sendString);
 
@@ -616,7 +616,6 @@ void initSystem() {
     } catch (Exception e) {
       println("OpenBCI_GUI: initSystem: could not open file for playback: " + playbackData_fname);
       println("   : quitting...");
-      abandonInit = true;
       hub.killAndShowMsg("Could not open file for playback: " + playbackData_fname);
     }
     println("OpenBCI_GUI: initSystem: loading complete.  " + playbackData_table.getRowCount() + " rows of data, which is " + round(float(playbackData_table.getRowCount())/getSampleRateSafe()) + " seconds of EEG data");
@@ -708,8 +707,8 @@ void initSystem() {
 
   if (abandonInit) {
     haltSystem();
-    println("Failed to connect to data source...");
-    output("Failed to connect to data source...");
+    println("Failed to connect to data source... 1");
+    outputError("Failed to connect to data source fail point 1");
   } else {
     println("  3a -- " + millis());
     //initilize the GUI
@@ -738,12 +737,12 @@ void initSystem() {
         controlPanel.close();
       } else {
         haltSystem();
-        println("Failed to connect to data source...");
+        println("Failed to connect to data source... 2");
         // output("Failed to connect to data source...");
       }
     } else {
       haltSystem();
-      println("Failed to connect to data source...");
+      println("Failed to connect to data source... 3");
       // output("Failed to connect to data source...");
     }
   }
@@ -945,7 +944,7 @@ void systemUpdate() { // for updating data values and variables
   win_x = width;
   win_y = height;
 
-
+  helpWidget.update();
   if (systemMode == SYSTEMMODE_PREINIT) {
     //updates while in system control panel before START SYSTEM
     controlPanel.update();
@@ -1212,7 +1211,7 @@ void introAnimation() {
     textLeading(24);
     fill(31, 69, 110, transparency);
     textAlign(CENTER, CENTER);
-    text("OpenBCI GUI v3.2.0\nNovember 2017", width/2, height/2 + width/9);
+    text("OpenBCI GUI v3.2.0\nDecember 2017", width/2, height/2 + width/9);
   }
 
   //exit intro animation at t2

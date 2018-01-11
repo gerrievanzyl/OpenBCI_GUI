@@ -113,7 +113,8 @@ class Hub {
   final static int RESP_ERROR_CHANNEL_SETTINGS_SYNC_IN_PROGRESS = 422;
   final static int RESP_ERROR_CHANNEL_SETTINGS_FAILED_TO_SET_CHANNEL = 424;
   final static int RESP_ERROR_CHANNEL_SETTINGS_FAILED_TO_PARSE = 425;
-  final static int RESP_ERROR_COMMAND_NOT_RECOGNIZED = 406;
+  final static int RESP_ERROR_COMMAND_NOT_ABLE_TO_BE_SENT = 406;
+  final static int RESP_ERROR_COMMAND_NOT_RECOGNIZED = 434;
   final static int RESP_ERROR_DEVICE_NOT_FOUND = 405;
   final static int RESP_ERROR_IMPEDANCE_COULD_NOT_START = 414;
   final static int RESP_ERROR_IMPEDANCE_COULD_NOT_STOP = 415;
@@ -135,6 +136,7 @@ class Hub {
   final static int RESP_ERROR_WIFI_ACTION_NOT_RECOGNIZED = 427;
   final static int RESP_ERROR_WIFI_COULD_NOT_ERASE_CREDENTIALS = 428;
   final static int RESP_ERROR_WIFI_COULD_NOT_SET_LATENCY = 429;
+  final static int RESP_ERROR_WIFI_NEEDS_UPDATE = 435;
   final static int RESP_ERROR_WIFI_NOT_CONNECTED = 426;
   final static int RESP_GANGLION_FOUND = 201;
   final static int RESP_SUCCESS = 200;
@@ -151,6 +153,10 @@ class Hub {
   final static int LATENCY_5_MS = 5000;
   final static int LATENCY_10_MS = 10000;
   final static int LATENCY_20_MS = 20000;
+
+  final static String TCP = "tcp";
+  final static String UDP = "udp";
+  final static String UDP_BURST = "udpBurst";
 
   public int curLatency = LATENCY_10_MS;
 
@@ -187,6 +193,7 @@ class Hub {
   public char[] tcpBuffer = new char[4096];
   public int tcpBufferPositon = 0;
   private String curProtocol = PROTOCOL_WIFI;
+  private String curInternetProtocol = TCP;
 
   private boolean waitingForResponse = false;
   private boolean nodeProcessHandshakeComplete = false;
@@ -207,12 +214,22 @@ class Hub {
   // Getters
   public int get_state() { return state; }
   public int getLatency() { return curLatency; }
+  public String getWifiInternetProtocol() { return curInternetProtocol; }
   public boolean isPortOpen() { return portIsOpen; }
   public boolean isHubRunning() { return hubRunning; }
   public boolean isSearching() { return searching; }
   public boolean isCheckingImpedance() { return checkingImpedance; }
   public boolean isAccelModeActive() { return accelModeActive; }
-  public void setLatency(int latency) { curLatency = latency; }
+  public void setLatency(int latency) {
+    curLatency = latency;
+    output("Setting Latency to " + latency);
+    println("Setting Latency Protocol to " + latency);
+  }
+  public void setWifiInternetProtocol(String internetProtocol) {
+    curInternetProtocol = internetProtocol;
+    output("Setting WiFi Internet Protocol to " + internetProtocol);
+    println("Setting WiFi Internet Protocol to " + internetProtocol);
+  }
 
   private PApplet mainApplet;
 
@@ -298,8 +315,11 @@ class Hub {
         processData(msg);
         break;
       case 'e': // Error
+        int code = int(list[1]);
         println("Hub: parseMessage: error: " + list[2]);
-        output("Hub in data folder outdated. Download a new hub for your OS at https://github.com/OpenBCI/OpenBCI_Ganglion_Electron/releases/latest");
+        if (code == RESP_ERROR_COMMAND_NOT_RECOGNIZED) {
+          output("Hub in data folder outdated. Download a new hub for your OS at https://github.com/OpenBCI/OpenBCI_Ganglion_Electron/releases/latest");
+        }
         break;
       case 'x':
         processExamine(msg);
@@ -326,6 +346,7 @@ class Hub {
         processWifi(msg);
         break;
       case 'k':
+        processCommand(msg);
         break;
       default:
         println("Hub: parseMessage: default: " + msg);
@@ -366,8 +387,8 @@ class Hub {
 
   private void processConnect(String msg) {
     String[] list = split(msg, ',');
-    println("Hub: processConnect: made it -- " + millis());
     int code = Integer.parseInt(list[1]);
+    println("Hub: processConnect: made it -- " + millis() + " code: " + code);
     switch (code) {
       case RESP_SUCCESS:
       case RESP_ERROR_ALREADY_CONNECTED:
@@ -384,6 +405,7 @@ class Hub {
         }
         break;
       case RESP_ERROR_UNABLE_TO_CONNECT:
+        println("Error in processConnect: RESP_ERROR_UNABLE_TO_CONNECT");
         if (list[2].equals("Error: Invalid sample rate")) {
           if (eegDataSource == DATASOURCE_CYTON) {
             killAndShowMsg("WiFi Shield is connected to a Ganglion. Please select LIVE (from Ganglion) instead of LIVE (from Cyton)");
@@ -394,7 +416,12 @@ class Hub {
           killAndShowMsg(list[2]);
         }
         break;
+      case RESP_ERROR_WIFI_NEEDS_UPDATE:
+        println("Error in processConnect: RESP_ERROR_WIFI_NEEDS_UPDATE");
+        killAndShowMsg("WiFi Shield Firmware is out of date. Learn to update: docs.openbci.com/Hardware/12-Wifi_Programming_Tutorial");
+        break;
       default:
+        println("Error in processConnect");
         handleError(code, list[2]);
         break;
     }
@@ -431,18 +458,18 @@ class Hub {
     systemMode = SYSTEMMODE_POSTINIT;
     controlPanel.close();
     topNav.controlPanelCollapser.setIsActive(false);
-    output("The GUI is done intializing. Press \"Start Data Stream\" to start streaming!");
+    outputSuccess("The GUI is done intializing. Press \"Start Data Stream\" to start streaming!");
     portIsOpen = true;
     controlPanel.hideAllBoxes();
   }
 
   private void killAndShowMsg(String msg) {
-    haltSystem();
+    abandonInit = true;
     initSystemButton.setString("START SYSTEM");
     controlPanel.open();
-    abandonInit = true;
-    output(msg);
+    outputError(msg);
     portIsOpen = false;
+    haltSystem();
   }
 
   /**
@@ -459,6 +486,24 @@ class Hub {
   public void sendCommand(String s) {
     println("Hub: sendCommand(String): sending \'" + s + "\'");
     write(TCP_CMD_COMMAND + "," + s + TCP_STOP);
+  }
+
+  public void processCommand(String msg) {
+    String[] list = split(msg, ',');
+    int code = Integer.parseInt(list[1]);
+    switch (code) {
+      case RESP_SUCCESS:
+        println("Hub: processCommand: success -- " + millis());
+        break;
+      case RESP_ERROR_COMMAND_NOT_ABLE_TO_BE_SENT:
+        println("Hub: processCommand: ERROR_COMMAND_NOT_ABLE_TO_BE_SENT -- " + millis() + " " + list[2]);
+        break;
+      case RESP_ERROR_PROTOCOL_NOT_STARTED:
+        println("Hub: processCommand: RESP_ERROR_PROTOCOL_NOT_STARTED -- " + millis() + " " + list[2]);
+        break;
+      default:
+        break;
+    }
   }
 
   public void processAccel(String msg) {
@@ -480,10 +525,10 @@ class Hub {
     try {
       // println(msg);
       String[] list = split(msg, ',');
-      int code = Integer.parseInt(list[1]); //<>//
+      int code = Integer.parseInt(list[1]);
       int stopByte = 0xC0; //<>//
       if ((eegDataSource == DATASOURCE_GANGLION || eegDataSource == DATASOURCE_CYTON) && systemMode == 10 && isRunning) { //<>//
-        if (Integer.parseInt(list[1]) == RESP_SUCCESS_DATA_SAMPLE) { //<>//
+        if (Integer.parseInt(list[1]) == RESP_SUCCESS_DATA_SAMPLE) {
           // Sample number stuff
           dataPacket.sampleIndex = int(Integer.parseInt(list[2]));
 
@@ -549,25 +594,9 @@ class Hub {
                   }
                   // println(validAccelValues[1]);
                 }
-                for (int i = 0; i < NUM_ACCEL_DIMS; i++) {
-                  // int val1 = Integer.parseInt(list[valCounter++]);
-                  // int val2 = Integer.parseInt(list[valCounter++]);
-
-                  // dataPacket.auxValues[i] = (val1 << 8) | val2;
-                  // dataPacket.rawAuxValues[i][0] = byte(val2);
-                  // dataPacket.rawAuxValues[i][1] = byte(val1 << 8);
-                  // println(dataPacket.auxValues[i]);
-                }
-                // if (accelArray[0] > 0 || accelArray[1] > 0 || accelArray[2] > 0) {
-                //   // println(msg);
-                //   for (int i = 0; i < NUM_ACCEL_DIMS; i++) {
-                //     validAccelValues[i] = accelArray[i];
-                //   }
-                // }
               }
             }
           }
- //<>//
           getRawValues(dataPacket);
           // println(binary(dataPacket.values[0], 24) + '\n' + binary(dataPacket.rawValues[0][0], 8) + binary(dataPacket.rawValues[0][1], 8) + binary(dataPacket.rawValues[0][2], 8) + '\n'); //<>//
           // println(dataPacket.values[7]);
@@ -681,9 +710,13 @@ class Hub {
       case RESP_SUCCESS:
         output("Transfer Protocol set to " + list[2]);
         println("Transfer Protocol set to " + list[2]);
+        if (eegDataSource == DATASOURCE_GANGLION && ganglion.isBLE()) {
+          hub.searchDeviceStart();
+          outputInfo("BLE was powered up sucessfully, now searching for BLE devices.");
+        }
         break;
       case RESP_ERROR_PROTOCOL_BLE_START:
-        output("Failed to start Ganglion BLE Driver, please see http://docs.openbci.com/Tutorials/02-Ganglion_Getting%20Started_Guide");
+        outputError("Failed to start Ganglion BLE Driver, please see http://docs.openbci.com/Tutorials/02-Ganglion_Getting%20Started_Guide");
         println("Failed to start Ganglion BLE Driver, please see http://docs.openbci.com/Tutorials/02-Ganglion_Getting%20Started_Guide");
         break;
       default:
@@ -937,7 +970,7 @@ class Hub {
   }
 
   public void connectWifi(String id) {
-    write(TCP_CMD_CONNECT + "," + id + "," + requestedSampleRate + "," + curLatency + TCP_STOP);
+    write(TCP_CMD_CONNECT + "," + id + "," + requestedSampleRate + "," + curLatency + "," + curInternetProtocol + TCP_STOP);
     verbosePrint("OpenBCI_GUI: hub : Sent connect to Hub - Id: " + id + " SampleRate: " + requestedSampleRate + "Hz Latency: " + curLatency + "ms");
 
   }
