@@ -49,6 +49,7 @@ The OpenBCI GUI will:
 * Provide a networking system to move data out of GUI into other apps over UDP, OSC, LSL, and Serial.
 * Provide a widget framework that allows users to create their own experiments.
 * Provide the ability to output data into a saved file for later offline processing.
+* Provide the ability to receive markers over UDP from an external application (e.g. stimulus presentation software) and pass these markers to a Cyton board for inclusion in the data stream.
 
 Using the OpenBCI GUI allows you, the user, to quickly visualize adn use your OpenBCI device. Further it should allow you to build on our powerful framework to implement your own great ideas!
 
@@ -83,6 +84,7 @@ You might be interested in:
 
 * A tutorial to [make your own GUI Widget][link_gui_widget_tutorial]
 * Purchase a [Cyton][link_shop_cyton] | [Ganglion][link_shop_ganglion] | [WiFi Shield][link_shop_wifi_shield] from [OpenBCI][link_openbci]
+* Documentation on the [marker functionality](MARKER_DOCUMENTATION.md)
 
 And of course, you'll want to know our:
 
@@ -118,3 +120,4 @@ MIT
 [link_openbci]: http://www.openbci.com
 [link_gui_widget_tutorial]: http://docs.openbci.com/Tutorials/15-Custom_Widgets
 [link_gui_run_from_processing]: http://docs.openbci.com/OpenBCI%20Software/01-OpenBCI_GUI#the-openbci-gui-running-the-openbci-gui-from-the-processing-ide
+
