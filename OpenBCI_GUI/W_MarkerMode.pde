@@ -12,7 +12,7 @@ class W_MarkerMode extends Widget {
 
   //to see all core variables/methods of the Widget class, refer to Widget.pde
   //put your custom variables here...
-  UDP udpRX;
+//  UDP udpRX;
 
   ControlP5 cp5; 
   // color boxBG;
@@ -379,7 +379,7 @@ class W_MarkerMode extends Widget {
   // See the documentation for the Java UDP class here:
   // https://ubaa.net/shared/processing/udp/udp_class_udp.htm
   
-/*  void udpReceiveHandler(byte[] data, String ip, int portRX){
+  void udpReceiveHandler(byte[] data, String ip, int portRX){
   
     String udpString = new String(data);
     println(udpString+" from: "+ip+" and port: "+portRX);
@@ -402,5 +402,5 @@ class W_MarkerMode extends Widget {
 
     }
   }
-*/
+
 };

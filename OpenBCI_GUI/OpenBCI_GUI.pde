@@ -72,7 +72,7 @@ Gif loadingGIF_blue;
 boolean initSystemThreadLock = false;
 
 // ---- Define variables related to OpenBCI_GUI UDPMarker functionality
-//UDP udpRX;
+UDP udpRX;
 
 //choose where to get the EEG data
 final int DATASOURCE_CYTON = 0; // new default, data from serial with Accel data CHIP 2014-11-03
