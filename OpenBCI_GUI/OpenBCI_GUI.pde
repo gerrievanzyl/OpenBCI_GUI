@@ -72,7 +72,7 @@ Gif loadingGIF_blue;
 boolean initSystemThreadLock = false;
 
 // ---- Define variables related to OpenBCI_GUI UDPMarker functionality
-UDP udpRX;
+//UDP udpRX;
 
 //choose where to get the EEG data
 final int DATASOURCE_CYTON = 0; // new default, data from serial with Accel data CHIP 2014-11-03
@@ -385,7 +385,7 @@ void setup() {
   timeOfSetup = millis(); //keep track of time when setup is finished... used to make sure enough time has passed before creating some other objects (such as the Ganglion instance)
 }
 //====================== END-OF-SETUP ==========================//
-/*
+
 //====================UDP Packet Handler==========================//
 // This function handles the received UDP packet
 // See the documentation for the Java UDP class here:
@@ -414,7 +414,7 @@ void udpReceiveHandler(byte[] data, String ip, int portRX){
 
   }
 }
-*/
+
 
 //======================== DRAW LOOP =============================//
 

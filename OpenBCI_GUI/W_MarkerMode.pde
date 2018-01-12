@@ -12,6 +12,7 @@ class W_MarkerMode extends Widget {
 
   //to see all core variables/methods of the Widget class, refer to Widget.pde
   //put your custom variables here...
+  UDP udpRX;
 
   ControlP5 cp5; 
   // color boxBG;
@@ -378,18 +379,12 @@ class W_MarkerMode extends Widget {
   // See the documentation for the Java UDP class here:
   // https://ubaa.net/shared/processing/udp/udp_class_udp.htm
   
-  void udpReceiveHandler(byte[] data, String ip, int portRX){
+/*  void udpReceiveHandler(byte[] data, String ip, int portRX){
   
     String udpString = new String(data);
     println(udpString+" from: "+ip+" and port: "+portRX);
     if (udpString.length() >=5  && udpString.indexOf("MARK") >= 0){
-  
-      /*  Old version with 10 markers
-      char c = value.charAt(4);
-    if ( c>= '0' && c <= '9'){
-        println("Found a valid UDP STIM of value: "+int(c)+" chr: "+c);
-        hub.sendCommand("`"+char(c-(int)'0'));
-        */
+
       int intValue = Integer.parseInt(udpString.substring(4));
   
       if (intValue > 0 && intValue < 96){ // Since we only send single char ascii value markers (from space to char(126)
@@ -407,5 +402,5 @@ class W_MarkerMode extends Widget {
 
     }
   }
-
+*/
 };
