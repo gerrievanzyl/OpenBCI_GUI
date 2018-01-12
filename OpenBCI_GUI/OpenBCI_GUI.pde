@@ -366,11 +366,12 @@ void setup() {
 
   myPresentation = new Presentation();
 
+/*  Moved to the marker widget
+
   // UDPMarker functionality
   // Setup the UDP receiver
   int portRX = 51000;  // this is the UDP port the application will be listening on
   String ip = "127.0.0.1";  // Currently only localhost is supported as UDP Marker source
-
   //create new object for receiving
   udpRX=new UDP(this,portRX,ip);
   udpRX.setReceiveHandler("udpReceiveHandler");
@@ -379,17 +380,16 @@ void setup() {
   // Print some useful diagnostics
   println("OpenBCI_GUI::Setup: Is RX mulitcast: "+udpRX.isMulticast());
   println("OpenBCI_GUI::Setup: Has RX joined multicast: "+udpRX.isJoined());
+*/
 
   timeOfSetup = millis(); //keep track of time when setup is finished... used to make sure enough time has passed before creating some other objects (such as the Ganglion instance)
 }
 //====================== END-OF-SETUP ==========================//
-
+/*
 //====================UDP Packet Handler==========================//
 // This function handles the received UDP packet
 // See the documentation for the Java UDP class here:
 // https://ubaa.net/shared/processing/udp/udp_class_udp.htm
-
-String udpReceiveString = null;
 
 void udpReceiveHandler(byte[] data, String ip, int portRX){
 
@@ -397,12 +397,6 @@ void udpReceiveHandler(byte[] data, String ip, int portRX){
   println(udpString+" from: "+ip+" and port: "+portRX);
   if (udpString.length() >=5  && udpString.indexOf("MARK") >= 0){
 
-    /*  Old version with 10 markers
-    char c = value.charAt(4);
-  if ( c>= '0' && c <= '9'){
-      println("Found a valid UDP STIM of value: "+int(c)+" chr: "+c);
-      hub.sendCommand("`"+char(c-(int)'0'));
-      */
     int intValue = Integer.parseInt(udpString.substring(4));
 
     if (intValue > 0 && intValue < 96){ // Since we only send single char ascii value markers (from space to char(126)
@@ -420,6 +414,7 @@ void udpReceiveHandler(byte[] data, String ip, int portRX){
 
   }
 }
+*/
 
 //======================== DRAW LOOP =============================//
 

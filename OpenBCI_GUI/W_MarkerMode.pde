@@ -13,6 +13,7 @@ class W_MarkerMode extends Widget {
   //to see all core variables/methods of the Widget class, refer to Widget.pde
   //put your custom variables here...
 
+  ControlP5 cp5; 
   // color boxBG;
   color graphStroke = #d2d2d2;
   color graphBG = #f5f5f5;
@@ -31,7 +32,9 @@ class W_MarkerMode extends Widget {
   int MarkerWindowX;
   int MarkerWindowY;
 
-
+  // State variable for the UDP listener
+  boolean udpRXisOpen = false;
+  
   color eggshell;
   color Xcolor;
 
@@ -83,7 +86,38 @@ class W_MarkerMode extends Widget {
     markerModeButton.textColorNotActive = color(255);
     markerModeButton.hasStroke(false);
     markerModeButton.setHelpText("Click this button to activate/deactivate the MarkerMode of your Cyton board!");
+
+    
+    /* Textfields for IP and Port */
+    cp5 = new ControlP5(pApplet);    
+    createTextFields("markerIP","IP: ","127.0.0.1");
+    createTextFields("markerPort","Port: ","51000"); 
+    cp5.setAutoDraw(true);
+
   }
+  
+  
+  /* Create textfields for network parameters */
+  void createTextFields(String name, String label, String default_text){
+    cp5.addTextfield(name)
+      .align(10,100,10,100)                   // Alignment
+      .setSize(80,18)                         // Size of textfield
+      .setFont(f2)
+      .setFocus(false)                        // Deselects textfield
+      .setColor(color(26,26,26))
+      .setColorBackground(color(255,255,255)) // text field bg color
+      .setColorValueLabel(color(0,0,0))       // text color
+      .setColorForeground(color(26,26,26))    // border color when not selected
+      .setColorActive(isSelected_color)       // border color when selected
+      .setColorCursor(color(26,26,26))
+      .setText(default_text)                  // Default text in the field
+      .setCaptionLabel(label)                 // Remove caption label
+      .setColorLabel(color(0,0,0))
+      .setVisible(true)                      // always visible
+      .setAutoClear(true)                     // Autoclear
+      ;
+  }
+
 
   public void initPlayground(Cyton _OBCI) {
     OBCI_inited = true;
@@ -120,6 +154,12 @@ class W_MarkerMode extends Widget {
     pushStyle();
     //put your code here...
     //remember to refer to x,y,w,h which are the positioning variables of the Widget class
+    
+    cp5.get(Textfield.class, "markerIP").setVisible(true);
+    cp5.get(Textfield.class, "markerPort").setVisible(true);
+
+    cp5.draw();
+    
     if (true) {
 
       fill(50);
@@ -159,6 +199,8 @@ class W_MarkerMode extends Widget {
     }
     popStyle();
   }
+  
+
 
   void setGraphDimensions(){
     MarkerWindowWidth = w - padding*2;
@@ -173,6 +215,9 @@ class W_MarkerMode extends Widget {
     int prevY = y;
     int prevW = w;
     int prevH = h;
+    int column1;
+    int column2;
+    int row0;
 
     super.screenResized(); //calls the parent screenResized() method of Widget (DON'T REMOVE)
 
@@ -180,7 +225,16 @@ class W_MarkerMode extends Widget {
     println("dy = " + dy);
 
     //put your code here...
-    println("Acc Widget -- Screen Resized.");
+    println("MarkerMode Widget -- Screen Resized.");
+    
+    cp5.setGraphics(pApplet, 0,0);
+
+    column1 = x+w/3;
+    column2 = x+2*w/3;
+    row0 = y;
+
+    cp5.get(Textfield.class, "markerIP").setPosition(column1, (int)(y - navHeight + 2));
+    cp5.get(Textfield.class, "markerPort").setPosition(column2, (int)(y - navHeight + 2));
 
     setGraphDimensions();
 
@@ -209,11 +263,17 @@ class W_MarkerMode extends Widget {
       if((cyton.isPortOpen() && eegDataSource == DATASOURCE_CYTON) || eegDataSource == DATASOURCE_SYNTHETIC) {
         if (cyton.getBoardMode() != BOARD_MODE_MARKER) {
           cyton.setBoardMode(BOARD_MODE_MARKER);
+          String ip = cp5.get(Textfield.class, "markerIP").getText();
+          int port = Integer.parseInt(cp5.get(Textfield.class, "markerPort").getText());
+          println();
+          println("UDP marker IP: "+ip+":"+port);
+          startUDPListener(ip, port);
           output("Starting to read markers");
           markerModeButton.setString("Turn Marker Off");
         } else {
           cyton.setBoardMode(BOARD_MODE_DEFAULT);
           output("Starting to read accelerometer");
+          stopUDPListener();
           markerModeButton.setString("Turn Marker On");
         }
       } 
@@ -279,9 +339,73 @@ class W_MarkerMode extends Widget {
   }
 
 
+  /* Setup the UDP reciever */
+  void startUDPListener(String ip, int port){
+    if (udpRXisOpen == true)
+      stopUDPListener();
+    //create new object for receiving
+    udpRX=new UDP(this,port,ip);
+    udpRX.setReceiveHandler("udpReceiveHandler");
+    udpRX.log(true);
+    udpRX.listen(true);
+    // Print some useful diagnostics
+    println("OpenBCI_GUI::Setup: Is RX mulitcast: "+udpRX.isMulticast());
+    println("OpenBCI_GUI::Setup: Has RX joined multicast: "+udpRX.isJoined());
+    udpRXisOpen = true;
+  }
+
+  /* Stop the UDP reciever */
+  void stopUDPListener(){
+    if (udpRXisOpen == true){
+      udpRX.close();
+      udpRXisOpen = false;
+    }
+  }
+
   int logScaleMarker( float value ) {
     // this returns log value between 0 and yMaxMin for a value between 0. and 255.
     return int(log(int(value)+1.0)*yMaxMin/log(yMaxMin+1));
+  }
+  
+  /* Call to shutdown some UI stuff. Called from W_manager, maybe do this differently.. */
+  void shutDown(){
+    cp5.get(Textfield.class, "markerIP").setVisible(false);
+    cp5.get(Textfield.class, "markerPort").setVisible(false);
+  }
+  
+  //====================UDP Packet Handler==========================//
+  // This function handles the received UDP packet
+  // See the documentation for the Java UDP class here:
+  // https://ubaa.net/shared/processing/udp/udp_class_udp.htm
+  
+  void udpReceiveHandler(byte[] data, String ip, int portRX){
+  
+    String udpString = new String(data);
+    println(udpString+" from: "+ip+" and port: "+portRX);
+    if (udpString.length() >=5  && udpString.indexOf("MARK") >= 0){
+  
+      /*  Old version with 10 markers
+      char c = value.charAt(4);
+    if ( c>= '0' && c <= '9'){
+        println("Found a valid UDP STIM of value: "+int(c)+" chr: "+c);
+        hub.sendCommand("`"+char(c-(int)'0'));
+        */
+      int intValue = Integer.parseInt(udpString.substring(4));
+  
+      if (intValue > 0 && intValue < 96){ // Since we only send single char ascii value markers (from space to char(126)
+  
+        String sendString = "`"+char(intValue+31);
+  
+        println("Marker value: "+udpString+" with numeric value of char("+intValue+") as : "+sendString);
+        hub.sendCommand(sendString);
+  
+      } else {
+        println("udpReceiveHandler::Warning:invalid UDP STIM of value: "+intValue+" Received String: "+udpString);
+      }
+    } else {
+        println("udpReceiveHandler::Warning:invalid UDP marker packet: "+udpString);
+
+    }
   }
 
 };

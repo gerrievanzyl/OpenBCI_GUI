@@ -235,9 +235,16 @@ class WidgetManager{
           widgets.get(i).drawDropdowns();
           popStyle();
         }else{
-          if(widgets.get(i).widgetTitle.equals("Networking")){
+          if(widgets.get(i).widgetTitle.equals("Networking") ){
             try{
               w_networking.shutDown();
+            }catch (NullPointerException e){
+              println(e);
+            }
+          }
+          if(widgets.get(i).widgetTitle.equals("Marker Mode") ){
+            try{
+              w_markermode.shutDown();
             }catch (NullPointerException e){
               println(e);
             }
